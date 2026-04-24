@@ -136,7 +136,7 @@ Return ONLY the JSON object. Nothing else."""
 
 def call_anthropic(company):
     payload = {
-        'model': 'claude-3-5-haiku-20241022',
+        'model': 'claude-haiku-4-5',
         'max_tokens': 2000,
         'messages': [{'role': 'user', 'content': build_prompt(company)}]
     }
