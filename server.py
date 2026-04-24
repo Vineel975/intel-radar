@@ -392,6 +392,23 @@ def get_notifications():
 def health():
     return jsonify({'status':'ok','time':datetime.now().isoformat()})
 
+@app.get('/api/debug')
+def debug():
+    """Check server config — visit this URL to diagnose issues."""
+    with get_db() as db:
+        comp_count = db.execute("SELECT COUNT(*) FROM competitors").fetchone()[0]
+        sig_count  = db.execute("SELECT COUNT(*) FROM signals").fetchone()[0]
+        runs       = db.execute("SELECT * FROM runs ORDER BY created DESC LIMIT 3").fetchall()
+    return jsonify({
+        'api_key_set':   bool(ANTHROPIC_API_KEY),
+        'api_key_prefix': ANTHROPIC_API_KEY[:12] + '...' if ANTHROPIC_API_KEY else 'NOT SET',
+        'db_path':       DB_PATH,
+        'competitors':   comp_count,
+        'signals':       sig_count,
+        'recent_runs':   [dict(r) for r in runs],
+        'base_dir':      BASE_DIR,
+    })
+
 # ── BOOT ───────────────────────────────────────────────────────────────────────
 # Run at module level so gunicorn triggers DB init (not just __main__)
 init_db()
