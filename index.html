@@ -429,7 +429,7 @@
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────────────────
-let API = (localStorage.getItem('intel_api') || window.location.origin);
+let API = window.location.origin; // always same-origin on Railway
 const ANTHROPIC_KEY = localStorage.getItem('intel_anthropic_key') || '';
 
 // ── STATE ────────────────────────────────────────────────────────────────────
@@ -455,10 +455,11 @@ const URG_COLORS = {high:'#f87171',medium:'#fbbf24',low:'#888'};
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 async function init() {
-  await loadSettings();
-  await loadCompetitors();
-  await loadStats();
-  await loadRuns();
+  // Load in parallel, don't let one failure block others
+  try { await loadSettings(); } catch(e) { console.warn('Settings:', e); }
+  try { await loadCompetitors(); } catch(e) { console.warn('Competitors:', e); showToast('Cannot reach backend at: ' + API); }
+  try { await loadStats(); } catch(e) {}
+  try { await loadRuns(); } catch(e) {}
   if (competitors.length) selectComp(competitors[0].id);
   startCountdown();
   setInterval(loadStats, 30000);
@@ -478,7 +479,7 @@ async function loadCompetitors() {
   try {
     competitors = await api('/api/competitors');
     renderSidebar();
-  } catch(e) { showToast('Cannot reach backend. Is server.py running?'); }
+  } catch(e) { showToast('API error: ' + e.message + ' — URL: ' + API); console.error(e); }
 }
 
 function renderSidebar() {
