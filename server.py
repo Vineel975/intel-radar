@@ -135,13 +135,15 @@ Include exactly 6 signals covering a mix of: recent announcements, hiring trends
 Return ONLY the JSON object. Nothing else."""
 
 def call_anthropic(company):
+    payload = {
+        'model': 'claude-3-5-haiku-20241022',
+        'max_tokens': 2000,
+        'messages': [{'role': 'user', 'content': build_prompt(company)}]
+    }
+    log.info("Sending to Anthropic: model=%s, prompt_len=%d", payload['model'], len(payload['messages'][0]['content']))
     resp = requests.post(
         'https://api.anthropic.com/v1/messages',
-        json={
-            'model': 'claude-3-5-haiku-20241022',
-            'max_tokens': 2000,
-            'messages': [{'role': 'user', 'content': build_prompt(company)}]
-        },
+        json=payload,
         headers={
             'x-api-key': ANTHROPIC_API_KEY,
             'anthropic-version': '2023-06-01',
@@ -149,14 +151,14 @@ def call_anthropic(company):
         },
         timeout=90
     )
-    resp.raise_for_status()
+    if resp.status_code != 200:
+        raise ValueError(f"Anthropic {resp.status_code}: {resp.text[:500]}")
     data = resp.json()
-    log.info("Anthropic response id: %s, stop_reason: %s", data.get('id'), data.get('stop_reason'))
+    log.info("Anthropic ok: id=%s stop=%s", data.get('id'), data.get('stop_reason'))
     text = ' '.join(b['text'] for b in data.get('content', []) if b.get('type') == 'text')
-    log.info("Raw text length: %d", len(text))
     m = re.search(r'\{[\s\S]*\}', text.replace('```json','').replace('```','').strip())
     if not m:
-        raise ValueError("No JSON in response. Raw text: " + text[:300])
+        raise ValueError("No JSON in response. Raw: " + text[:300])
     return json.loads(m.group(0))
 
 def signal_hash(comp_id, title):
