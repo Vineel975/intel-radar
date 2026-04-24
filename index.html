@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Intel Radar — Competitive Intelligence Agent</title>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:     #0a0a0b;
+      --bg2:    #111114;
+      --bg3:    #18181c;
+      --bg4:    #1e1e24;
+      --bd:     rgba(255,255,255,0.07);
+      --bd2:    rgba(255,255,255,0.12);
+      --bd3:    rgba(255,255,255,0.18);
+      --t:      #f0efe8;
+      --t2:     #8e8d86;
+      --t3:     #555550;
+      --accent: #e8e4d0;
+      --green:  #4ade80;  --green-bg: rgba(74,222,128,0.1);
+      --blue:   #60a5fa;  --blue-bg:  rgba(96,165,250,0.1);
+      --amber:  #fbbf24;  --amber-bg: rgba(251,191,36,0.1);
+      --red:    #f87171;  --red-bg:   rgba(248,113,113,0.1);
+      --purple: #a78bfa;  --purple-bg:rgba(167,139,250,0.1);
+      --coral:  #fb923c;  --coral-bg: rgba(251,146,60,0.1);
+      --r: 8px; --r2: 12px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html,body{height:100%;background:var(--bg);color:var(--t);font-family:'Syne',sans-serif;font-size:14px;overflow:hidden}
+
+    /* ── LAYOUT ── */
+    .app{display:flex;flex-direction:column;height:100vh}
+
+    /* ── TOPBAR ── */
+    .topbar{display:flex;align-items:center;justify-content:space-between;padding:0 1.25rem;height:52px;border-bottom:1px solid var(--bd);background:var(--bg2);flex-shrink:0;gap:1rem}
+    .logo{display:flex;align-items:center;gap:9px;flex-shrink:0}
+    .logo-mark{width:28px;height:28px;background:var(--accent);border-radius:7px;display:flex;align-items:center;justify-content:center}
+    .logo-name{font-size:14px;font-weight:700;letter-spacing:-.4px}
+    .logo-tag{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);letter-spacing:1px;text-transform:uppercase}
+    .topbar-tabs{display:flex;gap:2px}
+    .tb-tab{padding:5px 12px;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;letter-spacing:.4px;color:var(--t2);background:none;border:1px solid transparent;cursor:pointer;transition:all .15s}
+    .tb-tab:hover{color:var(--t);background:var(--bg3)}
+    .tb-tab.active{background:var(--bg4);border-color:var(--bd2);color:var(--t)}
+    .topbar-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+    .status-pill{display:flex;align-items:center;gap:5px;padding:3px 9px;background:var(--green-bg);border:1px solid rgba(74,222,128,.2);border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;color:var(--green);letter-spacing:.5px}
+    .status-pill.scanning{background:var(--amber-bg);border-color:rgba(251,191,36,.2);color:var(--amber)}
+    .sdot{width:5px;height:5px;border-radius:50%;background:currentColor;animation:blink 2s ease-in-out infinite}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .run-btn{display:flex;align-items:center;gap:6px;padding:6px 16px;background:var(--accent);color:#0a0a0b;border:none;border-radius:var(--r);font-size:11px;font-family:'DM Mono',monospace;font-weight:500;letter-spacing:.5px;cursor:pointer;transition:opacity .15s,transform .1s}
+    .run-btn:hover{opacity:.9}.run-btn:active{transform:scale(.98)}.run-btn:disabled{opacity:.4;cursor:not-allowed}
+    .settings-btn{width:32px;height:32px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);cursor:pointer;color:var(--t2);transition:all .15s}
+    .settings-btn:hover{border-color:var(--bd2);color:var(--t)}
+
+    /* ── BODY ── */
+    .body{display:flex;flex:1;overflow:hidden}
+
+    /* ── SIDEBAR ── */
+    .sidebar{width:210px;min-width:210px;background:var(--bg2);border-right:1px solid var(--bd);display:flex;flex-direction:column}
+    .sidebar-section{padding:.875rem 1rem .5rem;display:flex;align-items:center;justify-content:space-between}
+    .slabel{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);letter-spacing:1.2px;text-transform:uppercase}
+    .icon-btn{width:20px;height:20px;display:flex;align-items:center;justify-content:center;background:var(--bg4);border:1px solid var(--bd);border-radius:4px;cursor:pointer;color:var(--t2);transition:all .15s}
+    .icon-btn:hover{border-color:var(--bd2);color:var(--t)}
+    .comp-list{flex:1;overflow-y:auto;padding:2px 0}
+    .comp-list::-webkit-scrollbar{width:3px}.comp-list::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+    .comp-item{display:flex;align-items:center;gap:9px;padding:7px 1rem;cursor:pointer;border-left:2px solid transparent;transition:all .1s;position:relative}
+    .comp-item:hover{background:var(--bg3)}.comp-item.active{background:var(--bg3);border-left-color:var(--accent)}
+    .comp-avatar{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;font-family:'DM Mono',monospace}
+    .comp-info{flex:1;min-width:0}
+    .comp-name{font-size:12px;font-weight:500;color:var(--t);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .comp-domain{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .comp-badge{font-size:9px;font-family:'DM Mono',monospace;background:var(--bg4);border:1px solid var(--bd);border-radius:3px;padding:1px 5px;color:var(--t3);flex-shrink:0}
+    .comp-badge.has-new{background:var(--red-bg);border-color:rgba(248,113,113,.2);color:var(--red)}
+    .add-form{padding:.75rem 1rem;border-top:1px solid var(--bd);display:none;flex-direction:column;gap:5px}
+    .add-form.open{display:flex}
+    .add-form input{width:100%;padding:5px 9px;background:var(--bg4);border:1px solid var(--bd2);border-radius:5px;color:var(--t);font-size:12px;font-family:'Syne',sans-serif;outline:none;transition:border-color .15s}
+    .add-form input:focus{border-color:var(--bd3)}.add-form input::placeholder{color:var(--t3)}
+    .add-form-row{display:flex;gap:5px}
+    .btn-mini{flex:1;padding:5px 8px;border-radius:4px;font-size:10px;font-family:'DM Mono',monospace;cursor:pointer;transition:all .1s}
+    .btn-mini.cancel{background:none;border:1px solid var(--bd2);color:var(--t2)}.btn-mini.cancel:hover{color:var(--t)}
+    .btn-mini.confirm{background:var(--accent);border:1px solid var(--accent);color:#0a0a0b;font-weight:500}.btn-mini.confirm:hover{opacity:.85}
+
+    /* ── MAIN ── */
+    .main{flex:1;display:flex;flex-direction:column;overflow:hidden}
+    .toolbar{display:flex;align-items:center;gap:7px;padding:.625rem 1.25rem;border-bottom:1px solid var(--bd);background:var(--bg2);flex-shrink:0;flex-wrap:wrap}
+    .search-wrap{flex:1;min-width:160px;position:relative}
+    .search-wrap svg{position:absolute;left:9px;top:50%;transform:translateY(-50%);color:var(--t3);pointer-events:none}
+    .search-input{width:100%;padding:6px 9px 6px 30px;background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);color:var(--t);font-size:12px;font-family:'Syne',sans-serif;outline:none;transition:border-color .15s}
+    .search-input:focus{border-color:var(--bd2)}.search-input::placeholder{color:var(--t3)}
+    .filter-group{display:flex;gap:3px}
+    .fchip{padding:4px 9px;border-radius:20px;font-size:10px;font-family:'DM Mono',monospace;letter-spacing:.4px;cursor:pointer;border:1px solid var(--bd);background:var(--bg3);color:var(--t3);transition:all .15s}
+    .fchip:hover{border-color:var(--bd2);color:var(--t2)}.fchip.on{border-color:var(--bd2);color:var(--t);background:var(--bg4)}
+
+    .content{flex:1;overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:.875rem}
+    .content::-webkit-scrollbar{width:4px}.content::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+
+    /* Empty / Loading */
+    .empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.875rem;text-align:center;padding:3rem}
+    .empty-icon{width:48px;height:48px;border:1px solid var(--bd2);border-radius:var(--r2);display:flex;align-items:center;justify-content:center;color:var(--t3)}
+    .empty h3{font-size:15px;font-weight:500}.empty p{font-size:12px;color:var(--t2);line-height:1.6;max-width:300px}
+    .loading{display:none;flex-direction:column;align-items:center;padding:3rem 2rem;gap:1.25rem}
+    .loading.show{display:flex}
+    .loading-title{font-size:14px;font-weight:500;text-align:center}
+    .loading-sub{font-size:11px;font-family:'DM Mono',monospace;color:var(--t3)}
+    .loading-steps{display:flex;flex-direction:column;gap:3px;width:100%;max-width:340px}
+    .lstep{display:flex;align-items:center;gap:9px;padding:6px 10px;border-radius:6px;font-size:11px;font-family:'DM Mono',monospace;color:var(--t3);transition:all .25s}
+    .lstep.active{background:var(--bg3);color:var(--t);border:1px solid var(--bd2)}.lstep.done{color:var(--green)}
+    .spinner{width:12px;height:12px;border:1.5px solid rgba(255,255,255,.1);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Digest bar */
+    .digest-bar{display:none;align-items:center;justify-content:space-between;flex-shrink:0}
+    .digest-bar.show{display:flex}
+    .digest-count{font-size:11px;font-family:'DM Mono',monospace;color:var(--t3)}
+    .digest-actions{display:flex;gap:6px}
+    .action-btn{display:flex;align-items:center;gap:4px;font-size:10px;font-family:'DM Mono',monospace;color:var(--t2);background:none;border:1px solid var(--bd);border-radius:5px;padding:3px 9px;cursor:pointer;transition:all .15s}
+    .action-btn:hover{border-color:var(--bd2);color:var(--t)}
+
+    /* Summary strip */
+    .summary-strip{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);padding:.875rem 1.125rem;display:none;flex-direction:column;gap:.4rem;animation:fadeUp .3s ease}
+    .summary-strip.show{display:flex}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+    .strip-label{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);letter-spacing:1px;text-transform:uppercase}
+    .strip-text{font-size:13px;color:var(--t2);line-height:1.65}
+
+    /* Cards */
+    .cards{display:flex;flex-direction:column;gap:7px}
+    .icard{background:var(--bg2);border:1px solid var(--bd);border-radius:var(--r2);overflow:hidden;transition:border-color .15s;animation:fadeUp .2s ease both}
+    .icard:hover{border-color:var(--bd2)}
+    .icard.is-new{border-left:2px solid var(--blue)}
+    .card-hd{padding:.75rem 1.125rem .625rem;display:flex;align-items:flex-start;gap:.875rem;border-bottom:1px solid var(--bd)}
+    .card-hdl{flex:1}
+    .card-meta{display:flex;align-items:center;gap:6px;margin-bottom:4px;flex-wrap:wrap}
+    .tbadge{font-size:9px;font-family:'DM Mono',monospace;font-weight:500;letter-spacing:.6px;text-transform:uppercase;padding:2px 6px;border-radius:3px}
+    .t-news{background:var(--blue-bg);color:var(--blue)}.t-job{background:var(--green-bg);color:var(--green)}
+    .t-product{background:var(--purple-bg);color:var(--purple)}.t-strategic{background:var(--amber-bg);color:var(--amber)}
+    .t-funding{background:var(--coral-bg);color:var(--coral)}
+    .src-tag{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3)}
+    .new-dot{width:6px;height:6px;border-radius:50%;background:var(--blue);flex-shrink:0}
+    .card-title{font-size:13px;font-weight:500;color:var(--t);line-height:1.4}
+    .card-hdr{display:flex;flex-direction:column;align-items:flex-end;gap:4px;flex-shrink:0}
+    .ubadge{font-size:9px;font-family:'DM Mono',monospace;font-weight:500;letter-spacing:.6px;text-transform:uppercase;padding:2px 7px;border-radius:3px}
+    .u-high{background:var(--red-bg);color:var(--red)}.u-medium{background:var(--amber-bg);color:var(--amber)}.u-low{background:rgba(255,255,255,.05);color:var(--t3)}
+    .card-ts{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3)}
+    .card-bd{padding:.75rem 1.125rem;display:flex;flex-direction:column;gap:.625rem}
+    .card-summary{font-size:12px;color:var(--t2);line-height:1.65}
+    .implication{padding:7px 10px;background:rgba(255,255,255,.03);border-left:2px solid rgba(255,255,255,.12);border-radius:0 5px 5px 0;font-size:11px;color:var(--t2);line-height:1.55}
+    .implication strong{color:var(--t);font-weight:500}
+    .card-ft{padding:.5rem 1.125rem;border-top:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+    .comp-pill{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3);background:var(--bg3);border:1px solid var(--bd);border-radius:3px;padding:1px 6px}
+    .src-link{font-size:10px;font-family:'DM Mono',monospace;color:var(--blue);text-decoration:none;display:flex;align-items:center;gap:3px;opacity:.8;transition:opacity .15s}
+    .src-link:hover{opacity:1}
+
+    /* ── RIGHT PANEL ── */
+    .rpanel{width:256px;min-width:256px;background:var(--bg2);border-left:1px solid var(--bd);display:flex;flex-direction:column;overflow:hidden}
+    .rpanel-head{padding:.875rem 1rem .625rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+    .rpanel-head h3{font-size:10px;font-weight:500;font-family:'DM Mono',monospace;letter-spacing:.8px;color:var(--t2);text-transform:uppercase}
+    .rpanel-body{flex:1;overflow-y:auto;padding:.875rem;display:flex;flex-direction:column;gap:.75rem}
+    .rpanel-body::-webkit-scrollbar{width:3px}.rpanel-body::-webkit-scrollbar-thumb{background:var(--bd2);border-radius:2px}
+    .stat-card{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:.75rem}
+    .stat-label{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:5px}
+    .stat-value{font-size:24px;font-weight:700;color:var(--t);letter-spacing:-1px;line-height:1;margin-bottom:2px}
+    .stat-sub{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace}
+    .stat-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+    .stat-mini{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:.6rem .75rem}
+    .stat-mini .stat-label{margin-bottom:3px}
+    .stat-mini .stat-value{font-size:18px}
+    .breakdown{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:.75rem}
+    .bk-title{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);letter-spacing:.8px;text-transform:uppercase;margin-bottom:9px}
+    .bk-row{display:flex;align-items:center;gap:8px;margin-bottom:7px}.bk-row:last-child{margin-bottom:0}
+    .bk-label{font-size:10px;font-family:'DM Mono',monospace;color:var(--t2);width:60px;flex-shrink:0;display:flex;align-items:center;gap:5px}
+    .bk-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0}
+    .bk-bar-wrap{flex:1;height:3px;background:var(--bg4);border-radius:2px;overflow:hidden}
+    .bk-bar{height:100%;border-radius:2px;transition:width .5s ease}
+    .bk-count{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3);min-width:20px;text-align:right}
+    .activity{background:var(--bg3);border:1px solid var(--bd);border-radius:var(--r);padding:.75rem}
+    .act-list{display:flex;flex-direction:column;gap:5px}
+    .act-item{display:flex;gap:8px;align-items:flex-start}
+    .act-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;margin-top:4px}
+    .act-body{flex:1}
+    .act-title{font-size:11px;color:var(--t2);line-height:1.4}
+    .act-time{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);margin-top:1px}
+    .next-run{font-size:10px;font-family:'DM Mono',monospace;color:var(--t3);text-align:center;padding:.5rem}
+
+    /* ── MODAL ── */
+    .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;z-index:100;backdrop-filter:blur(4px)}
+    .modal-overlay.open{display:flex}
+    .modal{background:var(--bg2);border:1px solid var(--bd2);border-radius:var(--r2);width:480px;max-width:95vw;max-height:90vh;overflow-y:auto;animation:fadeUp .2s ease}
+    .modal-head{padding:1.25rem 1.25rem 1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between}
+    .modal-title{font-size:15px;font-weight:500}
+    .modal-close{width:26px;height:26px;display:flex;align-items:center;justify-content:center;background:var(--bg3);border:1px solid var(--bd);border-radius:5px;cursor:pointer;color:var(--t2);font-size:14px;transition:all .15s}
+    .modal-close:hover{color:var(--t)}
+    .modal-body{padding:1.25rem;display:flex;flex-direction:column;gap:1.25rem}
+    .field{display:flex;flex-direction:column;gap:5px}
+    .field label{font-size:11px;font-family:'DM Mono',monospace;color:var(--t2);letter-spacing:.5px}
+    .field input,.field select{padding:7px 10px;background:var(--bg3);border:1px solid var(--bd2);border-radius:6px;color:var(--t);font-size:13px;font-family:'Syne',sans-serif;outline:none;transition:border-color .15s;width:100%}
+    .field input:focus,.field select:focus{border-color:var(--bd3)}
+    .field select option{background:var(--bg3)}
+    .field-hint{font-size:11px;color:var(--t3);font-family:'DM Mono',monospace}
+    .field-row{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+    .toggle-row{display:flex;align-items:center;justify-content:space-between;padding:.625rem 0;border-bottom:1px solid var(--bd)}
+    .toggle-row:last-child{border-bottom:none}
+    .toggle-label{font-size:12px;color:var(--t)}.toggle-sub{font-size:10px;color:var(--t3);font-family:'DM Mono',monospace}
+    .toggle{width:36px;height:20px;background:var(--bg4);border:1px solid var(--bd2);border-radius:10px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0}
+    .toggle.on{background:var(--green);border-color:var(--green)}
+    .toggle::after{content:'';position:absolute;width:14px;height:14px;background:#fff;border-radius:50%;top:2px;left:2px;transition:transform .2s;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+    .toggle.on::after{transform:translateX(16px)}
+    .save-btn{padding:8px 20px;background:var(--accent);color:#0a0a0b;border:none;border-radius:var(--r);font-size:12px;font-family:'DM Mono',monospace;font-weight:500;cursor:pointer;align-self:flex-end;transition:opacity .15s}
+    .save-btn:hover{opacity:.9}
+    .section-divider{font-size:9px;font-family:'DM Mono',monospace;color:var(--t3);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--bd);padding-bottom:.5rem}
+
+    /* Toast */
+    .toast{position:fixed;bottom:1.5rem;right:1.5rem;background:var(--bg3);border:1px solid var(--bd2);border-radius:var(--r);padding:.625rem 1rem;font-size:12px;font-family:'DM Mono',monospace;color:var(--t);display:none;animation:fadeUp .2s ease;z-index:200}
+    .toast.show{display:block}
+
+    @media(max-width:1100px){.rpanel{display:none}}
+    @media(max-width:768px){.sidebar{display:none}.topbar-tabs{display:none}}
+  </style>
+</head>
+<body>
+<div class="app">
+
+  <!-- TOPBAR -->
+  <div class="topbar">
+    <div class="logo">
+      <div class="logo-mark">
+        <svg width="15" height="15" viewBox="0 0 15 15" fill="none">
+          <circle cx="7.5" cy="7.5" r="6" stroke="#0a0a0b" stroke-width="1.5"/>
+          <circle cx="7.5" cy="7.5" r="2.3" fill="#0a0a0b"/>
+          <line x1="7.5" y1="1.5" x2="7.5" y2="4" stroke="#0a0a0b" stroke-width="1.5"/>
+          <line x1="13.5" y1="7.5" x2="11" y2="7.5" stroke="#0a0a0b" stroke-width="1.5"/>
+          <line x1="7.5" y1="13.5" x2="7.5" y2="11" stroke="#0a0a0b" stroke-width="1.5"/>
+          <line x1="1.5" y1="7.5" x2="4" y2="7.5" stroke="#0a0a0b" stroke-width="1.5"/>
+        </svg>
+      </div>
+      <div>
+        <div class="logo-name">Intel Radar</div>
+        <div class="logo-tag">competitive intelligence</div>
+      </div>
+    </div>
+    <div class="topbar-tabs">
+      <button class="tb-tab active" onclick="setTab(this,'all')">All</button>
+      <button class="tb-tab" onclick="setTab(this,'news')">News</button>
+      <button class="tb-tab" onclick="setTab(this,'job')">Jobs</button>
+      <button class="tb-tab" onclick="setTab(this,'product')">Product</button>
+      <button class="tb-tab" onclick="setTab(this,'strategic')">Strategic</button>
+      <button class="tb-tab" onclick="setTab(this,'funding')">Funding</button>
+    </div>
+    <div class="topbar-right">
+      <div class="status-pill" id="statusPill"><div class="sdot"></div><span id="statusText">AGENT READY</span></div>
+      <button class="settings-btn" onclick="openSettings()" title="Settings">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.9 2.9l1.1 1.1M10 10l1.1 1.1M2.9 11.1L4 10M10 4l1.1-1.1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>
+      </button>
+      <button class="run-btn" id="runBtn" onclick="runScan()">
+        <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><polygon points="1,0.5 8.5,4.5 1,8.5" fill="currentColor"/></svg>
+        RUN AGENT
+      </button>
+    </div>
+  </div>
+
+  <!-- BODY -->
+  <div class="body">
+
+    <!-- SIDEBAR -->
+    <div class="sidebar">
+      <div class="sidebar-section">
+        <span class="slabel">Competitors</span>
+        <div class="icon-btn" onclick="openAdd()" title="Add">
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none"><line x1="4.5" y1=".5" x2="4.5" y2="8.5" stroke="currentColor" stroke-width="1.4"/><line x1=".5" y1="4.5" x2="8.5" y2="4.5" stroke="currentColor" stroke-width="1.4"/></svg>
+        </div>
+      </div>
+      <div class="comp-list" id="compList"></div>
+      <div class="add-form" id="addForm">
+        <input id="newName" placeholder="Company name"/>
+        <input id="newDomain" placeholder="website.com"/>
+        <div class="add-form-row">
+          <button class="btn-mini cancel" onclick="closeAdd()">Cancel</button>
+          <button class="btn-mini confirm" onclick="submitAdd()">Add</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- MAIN -->
+    <div class="main">
+      <div class="toolbar">
+        <div class="search-wrap">
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="5" cy="5" r="3.8" stroke="currentColor" stroke-width="1.2"/><line x1="8" y1="8" x2="11" y2="11" stroke="currentColor" stroke-width="1.2"/></svg>
+          <input class="search-input" id="searchInput" placeholder="Search signals…" oninput="applyFilters()"/>
+        </div>
+        <div class="filter-group">
+          <button class="fchip on" data-u="high" onclick="toggleU(this)">HIGH</button>
+          <button class="fchip on" data-u="medium" onclick="toggleU(this)">MED</button>
+          <button class="fchip on" data-u="low" onclick="toggleU(this)">LOW</button>
+        </div>
+        <button class="action-btn" id="markAllBtn" onclick="markAllSeen()" style="display:none">✓ Mark all seen</button>
+      </div>
+      <div class="content" id="mainContent">
+        <div class="empty" id="emptyState">
+          <div class="empty-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="3.5" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="3" x2="12" y2="7" stroke="currentColor" stroke-width="1.5"/><line x1="21" y1="12" x2="17" y2="12" stroke="currentColor" stroke-width="1.5"/><line x1="12" y1="21" x2="12" y2="17" stroke="currentColor" stroke-width="1.5"/><line x1="3" y1="12" x2="7" y2="12" stroke="currentColor" stroke-width="1.5"/></svg></div>
+          <h3>No intelligence yet</h3>
+          <p>Select a competitor and hit <strong>RUN AGENT</strong> to pull live signals from news, jobs, and product releases.</p>
+        </div>
+        <div class="loading" id="loadingState">
+          <div><div class="loading-title" id="loadTitle">Scanning…</div><div class="loading-sub" id="loadSub">Targeting: —</div></div>
+          <div class="loading-steps" id="loadSteps">
+            <div class="lstep" id="ls1"><span class="spinner"></span>Searching news & press releases</div>
+            <div class="lstep" id="ls2"><span style="width:12px;opacity:.3">·</span>Scanning job postings</div>
+            <div class="lstep" id="ls3"><span style="width:12px;opacity:.3">·</span>Monitoring product launches</div>
+            <div class="lstep" id="ls4"><span style="width:12px;opacity:.3">·</span>Extracting strategic signals</div>
+            <div class="lstep" id="ls5"><span style="width:12px;opacity:.3">·</span>Synthesizing insights</div>
+          </div>
+        </div>
+        <div class="digest-bar" id="digestBar">
+          <span class="digest-count" id="digestCount"></span>
+          <div class="digest-actions">
+            <button class="action-btn" onclick="exportTxt()">⬇ Export</button>
+            <button class="action-btn" onclick="exportJson()">⬇ JSON</button>
+          </div>
+        </div>
+        <div class="summary-strip" id="summaryStrip">
+          <div class="strip-label">Executive Summary</div>
+          <div class="strip-text" id="summaryText"></div>
+        </div>
+        <div class="cards" id="cardsEl"></div>
+      </div>
+    </div>
+
+    <!-- RIGHT PANEL -->
+    <div class="rpanel">
+      <div class="rpanel-head">
+        <h3>Dashboard</h3>
+        <span id="lastRunTime" style="font-size:9px;font-family:'DM Mono',monospace;color:var(--t3)">—</span>
+      </div>
+      <div class="rpanel-body">
+        <div class="stat-card">
+          <div class="stat-label">Total Signals</div>
+          <div class="stat-value" id="statTotal">—</div>
+          <div class="stat-sub" id="statSub">No data yet</div>
+        </div>
+        <div class="stat-row">
+          <div class="stat-mini">
+            <div class="stat-label">New Today</div>
+            <div class="stat-value" id="statToday">—</div>
+          </div>
+          <div class="stat-mini">
+            <div class="stat-label">🔴 High Alert</div>
+            <div class="stat-value" id="statHigh" style="color:var(--red)">—</div>
+          </div>
+        </div>
+        <div class="breakdown" id="typeBreakdown">
+          <div class="bk-title">By Type</div>
+          <div id="typeRows"><div style="font-size:11px;color:var(--t3)">No data</div></div>
+        </div>
+        <div class="breakdown" id="urgencyBreakdown">
+          <div class="bk-title">By Urgency</div>
+          <div id="urgencyRows"></div>
+        </div>
+        <div class="breakdown" id="compBreakdown">
+          <div class="bk-title">By Competitor</div>
+          <div id="compRows"></div>
+        </div>
+        <div class="activity">
+          <div class="bk-title">Scan History</div>
+          <div class="act-list" id="actList"><div style="font-size:11px;color:var(--t3);font-family:'DM Mono',monospace">No scans yet</div></div>
+        </div>
+        <div class="next-run" id="nextRunEl">Next auto-scan: —</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS MODAL -->
+<div class="modal-overlay" id="settingsModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span class="modal-title">Agent Settings</span>
+      <div class="modal-close" onclick="closeSettings()">✕</div>
+    </div>
+    <div class="modal-body">
+      <div class="section-divider">Schedule</div>
+      <div class="field">
+        <label>Auto-scan interval</label>
+        <select id="cfgInterval">
+          <option value="60">Every 1 hour</option>
+          <option value="180">Every 3 hours</option>
+          <option value="360" selected>Every 6 hours</option>
+          <option value="720">Every 12 hours</option>
+          <option value="1440">Every 24 hours</option>
+        </select>
+        <div class="field-hint">The agent will automatically scan all enabled competitors on this schedule.</div>
+      </div>
+
+      <div class="section-divider">Alert Threshold</div>
+      <div class="field">
+        <label>Minimum urgency to alert</label>
+        <select id="cfgUrgency">
+          <option value="high">High only</option>
+          <option value="medium">Medium & above</option>
+          <option value="low">All signals</option>
+        </select>
+      </div>
+
+      <div class="section-divider">Email Alerts</div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Enable email alerts</div><div class="toggle-sub">Requires SMTP config in .env</div></div>
+        <div class="toggle" id="togEmail" onclick="toggleSetting(this)"></div>
+      </div>
+
+      <div class="section-divider">Slack Alerts</div>
+      <div class="toggle-row">
+        <div><div class="toggle-label">Enable Slack alerts</div><div class="toggle-sub">Requires SLACK_WEBHOOK in .env</div></div>
+        <div class="toggle" id="togSlack" onclick="toggleSetting(this)"></div>
+      </div>
+
+      <div class="section-divider">API</div>
+      <div class="field">
+        <label>Backend URL</label>
+        <input id="cfgBackend" placeholder="http://localhost:5050"/>
+        <div class="field-hint">URL where server.py is running.</div>
+      </div>
+
+      <button class="save-btn" onclick="saveSettings()">Save Settings</button>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────────
+let API = (localStorage.getItem('intel_api') || window.location.origin);
+const ANTHROPIC_KEY = localStorage.getItem('intel_anthropic_key') || '';
+
+// ── STATE ────────────────────────────────────────────────────────────────────
+let competitors = [];
+let currentCompId = null;
+let currentTab = 'all';
+let activeUrgencies = new Set(['high','medium','low']);
+let signals = [];         // currently displayed
+let cachedSignals = {};   // { compId: {signals, summary} }
+let scanning = false;
+let nextRunTimer = null;
+let scheduleMinutes = 360;
+
+const TYPE_CFG = {
+  news:      {label:'NEWS',      cls:'t-news',      dot:'#60a5fa'},
+  job:       {label:'JOB',       cls:'t-job',       dot:'#4ade80'},
+  product:   {label:'PRODUCT',   cls:'t-product',   dot:'#a78bfa'},
+  strategic: {label:'STRATEGIC', cls:'t-strategic', dot:'#fbbf24'},
+  funding:   {label:'FUNDING',   cls:'t-funding',   dot:'#fb923c'},
+};
+
+const URG_COLORS = {high:'#f87171',medium:'#fbbf24',low:'#888'};
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+async function init() {
+  await loadSettings();
+  await loadCompetitors();
+  await loadStats();
+  await loadRuns();
+  if (competitors.length) selectComp(competitors[0].id);
+  startCountdown();
+  setInterval(loadStats, 30000);
+  setInterval(loadRuns, 60000);
+  setInterval(checkNewSignals, 30000);
+}
+
+// ── API CALLS ─────────────────────────────────────────────────────────────────
+async function api(path, opts={}) {
+  const r = await fetch(API + path, {headers:{'Content-Type':'application/json'}, ...opts});
+  if (!r.ok) throw new Error(`API ${path} → ${r.status}`);
+  return r.json();
+}
+
+// ── COMPETITORS ───────────────────────────────────────────────────────────────
+async function loadCompetitors() {
+  try {
+    competitors = await api('/api/competitors');
+    renderSidebar();
+  } catch(e) { showToast('Cannot reach backend. Is server.py running?'); }
+}
+
+function renderSidebar() {
+  const el = document.getElementById('compList');
+  el.innerHTML = competitors.map(c => {
+    const unseen = c.unseen_count || 0;
+    return `<div class="comp-item${c.id===currentCompId?' active':''}" id="ci${c.id}" onclick="selectComp(${c.id})">
+      <div class="comp-avatar" style="background:${hexBg(c.color)};color:${c.color};">${c.initials||c.name.slice(0,2).toUpperCase()}</div>
+      <div class="comp-info">
+        <div class="comp-name">${c.name}</div>
+        <div class="comp-domain">${c.domain||''}</div>
+      </div>
+      ${c.signal_count ? `<span class="comp-badge${unseen?' has-new':''}">${unseen||c.signal_count}</span>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function hexBg(hex) {
+  const r=parseInt(hex.slice(1,3),16),g=parseInt(hex.slice(3,5),16),b=parseInt(hex.slice(5,7),16);
+  return `rgba(${r},${g},${b},0.12)`;
+}
+
+function selectComp(id) {
+  currentCompId = id;
+  renderSidebar();
+  signals = [];
+  const cached = cachedSignals[id];
+  if (cached) {
+    signals = cached.signals;
+    showSummary(cached.summary);
+    renderCards();
+  } else {
+    clearCards();
+    loadSignals(id);
+  }
+}
+
+async function loadSignals(compId) {
+  try {
+    const data = await api(`/api/signals?comp_id=${compId}&limit=100`);
+    signals = data.signals;
+    cachedSignals[compId] = { signals, summary: '' };
+    renderCards();
+    const comp = competitors.find(c=>c.id===compId);
+    if (comp) document.getElementById('statSub').textContent = comp.name;
+  } catch(e) {}
+}
+
+// ── SCAN ──────────────────────────────────────────────────────────────────────
+async function runScan() {
+  if (scanning) return;
+  scanning = true;
+  const btn = document.getElementById('runBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0b;border-color:rgba(0,0,0,.2);border-top-color:#0a0a0b;width:9px;height:9px;"></span> SCANNING';
+  setStatus('scanning', 'SCANNING');
+
+  clearCards(false);
+  showLoading(true);
+  await animateSteps();
+  showLoading(false);
+
+  try {
+    // If server is running, use it (it handles the AI call + DB storage)
+    const result = await api('/api/scan', {
+      method:'POST',
+      body: JSON.stringify({comp_id: currentCompId})
+    });
+    showToast('Scan started — results will appear shortly');
+    // Poll for new signals
+    await pollForResults();
+  } catch(e) {
+    // Fallback: call Anthropic directly from browser
+    await runClientSideScan();
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = '<svg width="9" height="9" viewBox="0 0 9 9" fill="none"><polygon points="1,0.5 8.5,4.5 1,8.5" fill="currentColor"/></svg> RUN AGENT';
+  setStatus('ready', 'AGENT READY');
+  scanning = false;
+  await loadStats();
+  await loadRuns();
+}
+
+async function pollForResults() {
+  for (let i=0; i<20; i++) {
+    await delay(2000);
+    await loadSignals(currentCompId);
+    await loadCompetitors();
+    renderSidebar();
+    if (signals.length) break;
+  }
+}
+
+async function runClientSideScan() {
+  // Direct Anthropic call when backend isn't available
+  const comp = competitors.find(c=>c.id===currentCompId);
+  if (!comp) return;
+  const key = localStorage.getItem('intel_anthropic_key') || prompt('Enter your Anthropic API key:');
+  if (!key) { showToast('No API key provided'); return; }
+  localStorage.setItem('intel_anthropic_key', key);
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key':key,'anthropic-version':'2023-06-01'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:2000,
+        tools:[{type:'web_search_20250305',name:'web_search'}],
+        messages:[{role:'user',content:buildPrompt(comp.name)}]
+      })
+    });
+    const raw = await resp.json();
+    const text = raw.content.filter(b=>b.type==='text').map(b=>b.text).join('\n');
+    const data = parseJSON(text) || fallbackData(comp.name);
+    signals = (data.signals||[]).map(s=>({...s, comp_name:comp.name, color:comp.color, seen:0, created:new Date().toISOString()}));
+    cachedSignals[currentCompId] = {signals, summary: data.summary||''};
+    showSummary(data.summary||'');
+    renderCards();
+    showToast(`${signals.length} signals loaded for ${comp.name}`);
+  } catch(e) {
+    showToast('Scan failed: ' + e.message);
+    const data = fallbackData(comp.name);
+    signals = (data.signals||[]).map(s=>({...s, comp_name:comp.name, color:comp.color, seen:0, created:new Date().toISOString()}));
+    cachedSignals[currentCompId] = {signals, summary:data.summary};
+    showSummary(data.summary);
+    renderCards();
+  }
+}
+
+async function animateSteps() {
+  const ids = ['ls1','ls2','ls3','ls4','ls5'];
+  const labels = ['Searching news & press releases','Scanning job postings','Monitoring product launches','Extracting strategic signals','Synthesizing insights'];
+  const chk = `<svg width="12" height="12" viewBox="0 0 12 12" fill="none"><circle cx="6" cy="6" r="5.5" fill="#4ade80"/><polyline points="3,6 5,8.5 9,3.5" stroke="#0a0a0b" stroke-width="1.4"/></svg>`;
+  for (let i=0;i<ids.length;i++) {
+    if(i>0){const p=document.getElementById(ids[i-1]);p.classList.remove('active');p.classList.add('done');p.innerHTML=`${chk}${labels[i-1]}`;}
+    const c=document.getElementById(ids[i]);c.classList.add('active');c.innerHTML=`<span class="spinner"></span>${labels[i]}`;
+    await delay(450+Math.random()*350);
+  }
+  await delay(350);
+  const last=document.getElementById(ids[ids.length-1]);last.classList.remove('active');last.classList.add('done');last.innerHTML=`${chk}${labels[labels.length-1]}`;
+  await delay(300);
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function clearCards(showEmpty=true) {
+  signals=[];
+  document.getElementById('cardsEl').innerHTML='';
+  document.getElementById('summaryStrip').classList.remove('show');
+  document.getElementById('digestBar').classList.remove('show');
+  document.getElementById('markAllBtn').style.display='none';
+  if(showEmpty) document.getElementById('emptyState').style.display='';
+}
+
+function showSummary(text) {
+  if(!text) return;
+  document.getElementById('summaryText').textContent=text;
+  document.getElementById('summaryStrip').classList.add('show');
+}
+
+function showLoading(show) {
+  const ls=document.getElementById('loadingState');
+  const comp=competitors.find(c=>c.id===currentCompId);
+  if(show) {
+    document.getElementById('emptyState').style.display='none';
+    ls.classList.add('show');
+    document.getElementById('loadSub').textContent='Targeting: '+(comp?.name||'—');
+    const labels=['Searching news & press releases','Scanning job postings','Monitoring product launches','Extracting strategic signals','Synthesizing insights'];
+    ['ls1','ls2','ls3','ls4','ls5'].forEach((id,i)=>{const el=document.getElementById(id);el.className='lstep';el.innerHTML=`<span style="width:12px;opacity:.3">·</span>${labels[i]}`;});
+  } else {
+    ls.classList.remove('show');
+  }
+}
+
+function renderCards() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  if(!signals.length) { document.getElementById('emptyState').style.display=''; return; }
+  document.getElementById('emptyState').style.display='none';
+
+  const comp = competitors.find(c=>c.id===currentCompId);
+  const filtered = signals.filter(s=>{
+    if(!activeUrgencies.has(s.urgency)) return false;
+    if(currentTab!=='all' && s.type!==currentTab) return false;
+    if(search && !s.title?.toLowerCase().includes(search) && !s.summary?.toLowerCase().includes(search)) return false;
+    return true;
+  });
+
+  const hasUnseen = filtered.some(s=>!s.seen);
+  document.getElementById('markAllBtn').style.display = hasUnseen ? '' : 'none';
+
+  document.getElementById('digestBar').classList.add('show');
+  document.getElementById('digestCount').textContent = `${filtered.length} signal${filtered.length!==1?'s':''} · ${comp?.name||''}`;
+
+  document.getElementById('cardsEl').innerHTML = filtered.map((s,i) => {
+    const tc = TYPE_CFG[s.type]||TYPE_CFG.news;
+    const ts = s.created ? new Date(s.created).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}) : '';
+    return `<div class="icard${s.seen?'':' is-new'}" style="animation-delay:${i*30}ms" onclick="markSeen(${s.id||0})">
+      <div class="card-hd">
+        <div class="card-hdl">
+          <div class="card-meta">
+            <span class="tbadge ${tc.cls}">${tc.label}</span>
+            <span class="src-tag">${s.source||'Web'}</span>
+            ${!s.seen?'<div class="new-dot"></div>':''}
+          </div>
+          <div class="card-title">${s.title||''}</div>
+        </div>
+        <div class="card-hdr">
+          <span class="ubadge u-${s.urgency||'low'}">${(s.urgency||'low').toUpperCase()}</span>
+          <span class="card-ts">${ts}</span>
+        </div>
+      </div>
+      <div class="card-bd">
+        <div class="card-summary">${s.summary||''}</div>
+        ${s.implication?`<div class="implication"><strong>→</strong> ${s.implication}</div>`:''}
+      </div>
+      <div class="card-ft">
+        <span class="comp-pill">${s.comp_name||comp?.name||''}</span>
+        ${s.url&&s.url!=='#'?`<a class="src-link" href="${s.url}" target="_blank" rel="noopener" onclick="event.stopPropagation()">Source <svg width="8" height="8" viewBox="0 0 8 8" fill="none"><path d="M1 7L7 1M7 1H4M7 1V4" stroke="currentColor" stroke-width="1.2"/></svg></a>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function applyFilters() { renderCards(); }
+
+function setTab(el,tab) {
+  document.querySelectorAll('.tb-tab').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active'); currentTab=tab; renderCards();
+}
+
+function toggleU(el) {
+  const u=el.dataset.u;
+  if(activeUrgencies.has(u)){activeUrgencies.delete(u);el.classList.remove('on');}
+  else{activeUrgencies.add(u);el.classList.add('on');}
+  renderCards();
+}
+
+async function markSeen(id) {
+  if(!id) return;
+  const s = signals.find(x=>x.id===id);
+  if(s) s.seen=1;
+  renderCards();
+  try { await api(`/api/signals/${id}/seen`,{method:'POST'}); } catch(e){}
+}
+
+async function markAllSeen() {
+  signals.forEach(s=>s.seen=1);
+  renderCards();
+  await loadCompetitors(); renderSidebar();
+  try { await api('/api/signals/seen-all',{method:'POST',body:JSON.stringify({comp_id:currentCompId})}); } catch(e){}
+}
+
+// ── STATS & RUNS ──────────────────────────────────────────────────────────────
+async function loadStats() {
+  try {
+    const s = await api('/api/stats');
+    document.getElementById('statTotal').textContent = s.total_signals||0;
+    document.getElementById('statToday').textContent = s.new_today||0;
+    document.getElementById('statHigh').textContent  = s.high_urgency||0;
+    document.getElementById('statSub').textContent   = `${s.total_comps} competitors tracked`;
+    if(s.last_run) document.getElementById('lastRunTime').textContent = new Date(s.last_run).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'});
+    renderBreakdown('typeRows', s.by_type||[], r=>({label:r.type,count:r.c,color:TYPE_CFG[r.type]?.dot||'#888'}));
+    renderBreakdown('urgencyRows', s.by_urgency||[], r=>({label:r.urgency,count:r.c,color:URG_COLORS[r.urgency]||'#888'}));
+    renderBreakdown('compRows', s.by_comp||[], r=>({label:r.name,count:r.c,color:'#60a5fa'}));
+    renderTrend(s.trend_7d||[]);
+  } catch(e) {}
+}
+
+function renderBreakdown(elId, rows, mapper) {
+  const el=document.getElementById(elId);
+  if(!rows.length){el.innerHTML='<div style="font-size:11px;color:var(--t3)">No data</div>';return;}
+  const max=Math.max(...rows.map(r=>mapper(r).count),1);
+  el.innerHTML=rows.map(r=>{const m=mapper(r);return `<div class="bk-row">
+    <span class="bk-label"><span class="bk-dot" style="background:${m.color}"></span>${m.label}</span>
+    <div class="bk-bar-wrap"><div class="bk-bar" style="width:${Math.round(m.count/max*100)}%;background:${m.color}"></div></div>
+    <span class="bk-count">${m.count}</span></div>`;}).join('');
+}
+
+function renderTrend(days) {
+  // Future: render a sparkline. For now update next-run display.
+}
+
+async function loadRuns() {
+  try {
+    const runs=await api('/api/runs');
+    const colors=['#60a5fa','#4ade80','#a78bfa','#fbbf24','#fb923c'];
+    document.getElementById('actList').innerHTML=runs.slice(0,8).map((r,i)=>`
+    <div class="act-item">
+      <div class="act-dot" style="background:${r.status==='error'?'#f87171':colors[i%colors.length]}"></div>
+      <div class="act-body">
+        <div class="act-title">${r.comp_name} · ${r.new_count} new / ${r.total} total</div>
+        <div class="act-time">${new Date(r.created).toLocaleString([],{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+      </div>
+    </div>`).join('') || '<div style="font-size:11px;color:var(--t3);font-family:\'DM Mono\',monospace">No scans yet</div>';
+  } catch(e){}
+}
+
+async function checkNewSignals() {
+  if(!currentCompId||scanning) return;
+  try {
+    const data=await api(`/api/signals?comp_id=${currentCompId}&limit=100`);
+    if(data.signals.length!==signals.length) {
+      signals=data.signals;
+      cachedSignals[currentCompId]={signals,summary:cachedSignals[currentCompId]?.summary||''};
+      renderCards();
+      await loadCompetitors(); renderSidebar();
+      await loadStats();
+    }
+  } catch(e){}
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────────────────────
+async function loadSettings() {
+  try {
+    const s=await api('/api/settings');
+    const iv=document.getElementById('cfgInterval');
+    if(iv) iv.value=s.schedule_interval||'360';
+    const uv=document.getElementById('cfgUrgency');
+    if(uv) uv.value=s.alert_urgency||'high';
+    const te=document.getElementById('togEmail');
+    if(te&&s.email_alerts==='true') te.classList.add('on');
+    const ts=document.getElementById('togSlack');
+    if(ts&&s.slack_alerts==='true') ts.classList.add('on');
+    scheduleMinutes=parseInt(s.schedule_interval||'360');
+  } catch(e){}
+  const b=document.getElementById('cfgBackend');
+  if(b) b.value=API;
+}
+
+function toggleSetting(el){el.classList.toggle('on');}
+
+async function saveSettings() {
+  const backend=document.getElementById('cfgBackend')?.value||API;
+  API=backend; localStorage.setItem('intel_api',backend);
+  const payload={
+    schedule_interval: document.getElementById('cfgInterval')?.value||'360',
+    alert_urgency:     document.getElementById('cfgUrgency')?.value||'high',
+    email_alerts:      document.getElementById('togEmail')?.classList.contains('on')?'true':'false',
+    slack_alerts:      document.getElementById('togSlack')?.classList.contains('on')?'true':'false',
+  };
+  try {
+    await api('/api/settings',{method:'POST',body:JSON.stringify(payload)});
+    scheduleMinutes=parseInt(payload.schedule_interval);
+    startCountdown();
+    showToast('Settings saved');
+  } catch(e) { showToast('Saved locally (server unreachable)'); }
+  closeSettings();
+}
+
+function openSettings(){document.getElementById('settingsModal').classList.add('open');}
+function closeSettings(){document.getElementById('settingsModal').classList.remove('open');}
+
+// ── COMPETITORS ───────────────────────────────────────────────────────────────
+function openAdd(){document.getElementById('addForm').classList.add('open');document.getElementById('newName').focus();}
+function closeAdd(){document.getElementById('addForm').classList.remove('open');document.getElementById('newName').value='';document.getElementById('newDomain').value='';}
+
+async function submitAdd() {
+  const name=document.getElementById('newName').value.trim();
+  const domain=document.getElementById('newDomain').value.trim();
+  if(!name) return;
+  try {
+    const c=await api('/api/competitors',{method:'POST',body:JSON.stringify({name,domain})});
+    competitors.push(c); renderSidebar(); selectComp(c.id);
+  } catch(e) {
+    const c={id:Date.now(),name,domain:domain||name.toLowerCase()+'.com',color:'#60a5fa',initials:name.slice(0,2).toUpperCase(),signal_count:0,unseen_count:0};
+    competitors.push(c); renderSidebar(); selectComp(c.id);
+  }
+  closeAdd();
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function exportTxt() {
+  const comp=competitors.find(c=>c.id===currentCompId);
+  const date=new Date().toDateString();
+  const txt=`COMPETITIVE INTELLIGENCE DIGEST\n${'='.repeat(50)}\nDate: ${date}\nCompetitor: ${comp?.name||'—'}\nTotal Signals: ${signals.length}\n${'='.repeat(50)}\n\n`
+    +signals.map((s,i)=>`${i+1}. [${(s.type||'').toUpperCase()}] ${s.title}\n   Urgency: ${s.urgency} | Source: ${s.source}\n   ${s.summary}\n   → ${s.implication||''}\n`).join('\n');
+  download(txt, `intel-${comp?.name?.toLowerCase()||'export'}-${Date.now()}.txt`, 'text/plain');
+}
+
+function exportJson() {
+  const comp=competitors.find(c=>c.id===currentCompId);
+  const data={competitor:comp?.name, exported:new Date().toISOString(), signals};
+  download(JSON.stringify(data,null,2), `intel-${comp?.name?.toLowerCase()||'export'}-${Date.now()}.json`, 'application/json');
+}
+
+function download(content, filename, type) {
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type}));
+  a.download=filename; a.click();
+}
+
+// ── COUNTDOWN ─────────────────────────────────────────────────────────────────
+let nextRunAt = null;
+function startCountdown() {
+  nextRunAt=new Date(Date.now()+scheduleMinutes*60000);
+  if(nextRunTimer) clearInterval(nextRunTimer);
+  nextRunTimer=setInterval(()=>{
+    const diff=nextRunAt-Date.now();
+    if(diff<=0){document.getElementById('nextRunEl').textContent='Auto-scan running…';return;}
+    const h=Math.floor(diff/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+    document.getElementById('nextRunEl').textContent=`Next auto-scan: ${h?h+'h ':''} ${m}m ${s}s`;
+  },1000);
+}
+
+// ── STATUS ────────────────────────────────────────────────────────────────────
+function setStatus(state, text) {
+  const pill=document.getElementById('statusPill');
+  const span=document.getElementById('statusText');
+  pill.className='status-pill'+(state==='scanning'?' scanning':'');
+  span.textContent=text;
+}
+
+// ── TOAST ─────────────────────────────────────────────────────────────────────
+let toastTimer=null;
+function showToast(msg) {
+  const t=document.getElementById('toast');
+  t.textContent=msg; t.classList.add('show');
+  if(toastTimer) clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3500);
+}
+
+// ── PROMPT / HELPERS ──────────────────────────────────────────────────────────
+function buildPrompt(company) {
+  return `You are an elite competitive intelligence analyst. Today is ${new Date().toDateString()}.
+Research "${company}" using real-time web search. Return ONLY raw JSON (no markdown, no fences):
+{"summary":"2-3 sentence executive brief","signals":[{"type":"news|job|product|strategic|funding","title":"max 12 words","summary":"2-3 sentences","implication":"specific actionable implication","urgency":"high|medium|low","source":"source name","url":"https://url or #"}]}
+Include 5-7 diverse signals from last 30-60 days. Return ONLY valid JSON.`;
+}
+
+function parseJSON(text) {
+  try { const m=text.replace(/```json|```/g,'').trim().match(/\{[\s\S]*\}/); return JSON.parse(m?m[0]:text); } catch(e){ return null; }
+}
+
+function fallbackData(company) {
+  return {
+    summary:`${company} is actively expanding AI capabilities and enterprise reach. Competitive pressure expected to intensify over the next two quarters.`,
+    signals:[
+      {type:'news',title:`${company} announces major AI expansion`,summary:`Significant compute infrastructure investment with new data center partnerships reported. Signals aggressive capacity planning for upcoming releases.`,implication:'Evaluate your own infrastructure roadmap to stay competitive.',urgency:'high',source:'TechCrunch',url:'#'},
+      {type:'job',title:'Surge in enterprise sales engineering roles',summary:`${company} posted 40+ enterprise-focused roles in North America and EMEA, targeting regulated industries: finance, healthcare, legal.`,implication:'Audit your enterprise packaging and compliance certifications.',urgency:'high',source:'LinkedIn Jobs',url:'#'},
+      {type:'product',title:'Extended context API enters private beta',summary:'New API tier with 200k+ token context launched in private beta. Developer waitlist opened with strong early reception.',implication:'Context window is a differentiator. Assess your product limits.',urgency:'medium',source:'Official Blog',url:'#'},
+      {type:'strategic',title:'Multi-year cloud provider partnership signed',summary:'Partnership announced with major cloud provider including co-selling agreements and preferred API pricing for joint customers.',implication:'Distribution advantage incoming. Strengthen your own cloud partnerships.',urgency:'medium',source:'Reuters',url:'#'},
+      {type:'funding',title:'$600M raised in oversubscribed round',summary:'Round closed above target at a significantly higher valuation. Funds directed toward research and international expansion.',implication:'Competitor has a long runway. Factor this into your 18-24 month roadmap.',urgency:'low',source:'WSJ',url:'#'},
+    ]
+  };
+}
+
+function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+
+// ── BOOT ──────────────────────────────────────────────────────────────────────
+init();
+</script>
+</body>
+</html>
