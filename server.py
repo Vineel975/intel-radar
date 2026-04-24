@@ -107,19 +107,39 @@ def init_db():
 def build_prompt(company):
     today = datetime.now().strftime('%B %d, %Y')
     return f"""You are an elite competitive intelligence analyst. Today is {today}.
-Research "{company}" using real-time web search. Return ONLY raw JSON (no markdown, no fences):
 
-{{"summary":"2-3 sentence executive brief","signals":[{{"type":"news|job|product|strategic|funding","title":"max 12 words","summary":"2-3 sentences","implication":"specific actionable implication","urgency":"high|medium|low","source":"source name","url":"https://url or #"}}]}}
+Analyze "{company}" and generate a competitive intelligence report covering their recent activity across news, hiring, products, strategy, and funding.
 
-Include 5-7 diverse signals from last 30-60 days. Return ONLY valid JSON."""
+Return ONLY a raw JSON object — no markdown, no code fences, no explanation before or after:
+
+{{
+  "summary": "2-3 sentence executive brief of the most important recent developments",
+  "signals": [
+    {{
+      "type": "news",
+      "title": "Short descriptive title under 12 words",
+      "summary": "2-3 sentences describing what happened and why it matters",
+      "implication": "Specific actionable implication for competitors",
+      "urgency": "high",
+      "source": "e.g. TechCrunch, LinkedIn Jobs, Official Blog, Reuters",
+      "url": "#"
+    }}
+  ]
+}}
+
+Types must be one of: news, job, product, strategic, funding
+Urgency must be one of: high, medium, low
+
+Include exactly 6 signals covering a mix of: recent announcements, hiring trends that reveal strategy, product launches or updates, partnerships or acquisitions, and any funding activity.
+
+Return ONLY the JSON object. Nothing else."""
 
 def call_anthropic(company):
     resp = requests.post(
         'https://api.anthropic.com/v1/messages',
         json={
-            'model': 'claude-sonnet-4-20250514',
+            'model': 'claude-sonnet-4-5-20251001',
             'max_tokens': 2000,
-            'tools': [{'type': 'web_search_20250305', 'name': 'web_search'}],
             'messages': [{'role': 'user', 'content': build_prompt(company)}]
         },
         headers={
@@ -130,10 +150,13 @@ def call_anthropic(company):
         timeout=90
     )
     resp.raise_for_status()
-    text = ' '.join(b['text'] for b in resp.json().get('content', []) if b.get('type') == 'text')
+    data = resp.json()
+    log.info("Anthropic response id: %s, stop_reason: %s", data.get('id'), data.get('stop_reason'))
+    text = ' '.join(b['text'] for b in data.get('content', []) if b.get('type') == 'text')
+    log.info("Raw text length: %d", len(text))
     m = re.search(r'\{[\s\S]*\}', text.replace('```json','').replace('```','').strip())
     if not m:
-        raise ValueError("No JSON in response")
+        raise ValueError("No JSON in response. Raw text: " + text[:300])
     return json.loads(m.group(0))
 
 def signal_hash(comp_id, title):
