@@ -393,8 +393,10 @@ def health():
     return jsonify({'status':'ok','time':datetime.now().isoformat()})
 
 # ── BOOT ───────────────────────────────────────────────────────────────────────
+# Run at module level so gunicorn triggers DB init (not just __main__)
+init_db()
+setup_scheduler()
+
 if __name__ == '__main__':
-    init_db()
-    setup_scheduler()
     log.info("Intel Radar on port %d", PORT)
     app.run(host='0.0.0.0', port=PORT, debug=False)
