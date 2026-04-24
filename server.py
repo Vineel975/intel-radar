@@ -138,7 +138,7 @@ def call_anthropic(company):
     resp = requests.post(
         'https://api.anthropic.com/v1/messages',
         json={
-            'model': 'claude-sonnet-4-5-20251001',
+            'model': 'claude-3-5-haiku-20241022',
             'max_tokens': 2000,
             'messages': [{'role': 'user', 'content': build_prompt(company)}]
         },
