@@ -536,22 +536,23 @@ async function runScan() {
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner" style="border-top-color:#0a0a0b;border-color:rgba(0,0,0,.2);border-top-color:#0a0a0b;width:9px;height:9px;"></span> SCANNING';
   setStatus('scanning', 'SCANNING');
-
   clearCards(false);
   showLoading(true);
-  await animateSteps();
-  showLoading(false);
 
   try {
-    // If server is running, use it (it handles the AI call + DB storage)
+    // Fire the scan immediately (don't wait for animation first)
     const result = await api('/api/scan', {
       method:'POST',
       body: JSON.stringify({comp_id: currentCompId})
     });
-    showToast('Scan started — results will appear shortly');
-    // Poll for new signals
+    // Animate steps while scan runs in background
+    await animateSteps();
+    showLoading(false);
+    showToast('Scan running — fetching results...');
+    // Poll up to 90 seconds (45 × 2s)
     await pollForResults();
   } catch(e) {
+    showLoading(false);
     // Fallback: call Anthropic directly from browser
     await runClientSideScan();
   }
@@ -565,12 +566,34 @@ async function runScan() {
 }
 
 async function pollForResults() {
-  for (let i=0; i<20; i++) {
+  const startCount = signals.length;
+  // Poll for up to 90 seconds (45 x 2s)
+  for (let i=0; i<45; i++) {
     await delay(2000);
-    await loadSignals(currentCompId);
-    await loadCompetitors();
-    renderSidebar();
-    if (signals.length) break;
+    try {
+      await loadSignals(currentCompId);
+      await loadCompetitors();
+      renderSidebar();
+      // Check if we got new signals
+      if (signals.length > startCount) {
+        showToast('Got ' + signals.length + ' signals!');
+        break;
+      }
+      // Also check run status
+      const runs = await api('/api/runs?comp_id=' + currentCompId);
+      const latest = runs[0];
+      if (latest && latest.status === 'error') {
+        showToast('Scan error: ' + (latest.error || 'Unknown error'));
+        break;
+      }
+      if (latest && latest.status === 'done' && i > 5) {
+        // Scan finished but no new signals (all duplicates)
+        await loadSignals(currentCompId);
+        renderSidebar();
+        showToast('Scan complete — ' + signals.length + ' total signals');
+        break;
+      }
+    } catch(e) { /* keep polling */ }
   }
 }
 
