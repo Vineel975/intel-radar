@@ -26,11 +26,14 @@ SMTP_PASS     = os.getenv('SMTP_PASS', '')
 SLACK_WEBHOOK = os.getenv('SLACK_WEBHOOK', '')
 ALERT_EMAIL   = os.getenv('ALERT_EMAIL', '')
 PORT          = int(os.getenv('PORT', 8080))
-DB_PATH       = os.getenv('DB_PATH', '/tmp/intel.db')
+DB_PATH       = os.getenv('DB_PATH', '/tmp/intel_radar.db')
+
+# Absolute path to the directory where server.py lives
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # ── APP ────────────────────────────────────────────────────────────────────────
-app = Flask(__name__, static_folder='.', static_url_path='')
-CORS(app)
+app = Flask(__name__, static_folder=BASE_DIR, static_url_path='')
+CORS(app, resources={r"/*": {"origins": "*"}})
 
 # ── DATABASE ───────────────────────────────────────────────────────────────────
 def get_db():
@@ -247,7 +250,7 @@ def reschedule(mins):
 # ── FRONTEND ───────────────────────────────────────────────────────────────────
 @app.get('/')
 def serve_index():
-    return send_from_directory('.', 'index.html')
+    return send_from_directory(BASE_DIR, 'index.html')
 
 # ── API ROUTES ─────────────────────────────────────────────────────────────────
 @app.get('/api/competitors')
